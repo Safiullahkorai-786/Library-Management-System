@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Books</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f0f2f5;
+      padding-top: 56px;
+    }
+    
+    /* Navbar mobile adjustments */
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+    
+    .navbar-brand {
+      font-size: 1.1rem;
+    }
+    
+    .nav-link {
+      padding: 0.5rem 0.8rem;
+    }
+    
+    /* Card adjustments */
+    .card {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      border-radius: 0.8rem;
+      margin-bottom: 1rem;
+    }
+    
+    /* Table adjustments */
+    .table {
+      font-size: 0.9rem;
+    }
+    
+    .table th, .table td {
+      vertical-align: middle;
+      padding: 0.75rem 0.5rem;
+    }
+    
+    /* Serial number column */
+    .table th:first-child,
+    .table td:first-child {
+      width: 50px;
+      text-align: center;
+    }
+    
+    /* Form elements */
+    #book-form .form-control, 
+    #searchInput, 
+    #sortField, 
+    #sortOrder {
+      height: 38px;
+      font-size: 0.9rem;
+      color: #495057;
+      background-color: #fff;
+      border: 1px solid #ced4da;
+    }
+    
+    /* Consistent styling for search/sort boxes */
+    #searchInput::placeholder,
+    #sortField option:first-child,
+    #sortOrder option:first-child {
+      color: #6c757d;
+    }
+    
+    /* Button adjustments */
+    .btn {
+      font-size: 0.85rem;
+      padding: 0.375rem 0.75rem;
+    }
+    
+    /* Error Message Box - Mobile First */
+    #errorMessage {
+      position: fixed;
+      top: 60px;
+      left: 10px;
+      right: 10px;
+      background-color: #dc3545;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: none;
+      text-align: center;
+      font-size: 0.9rem;
+      margin: 0 auto;
+      max-width: 500px;
+    }
+    
+    #errorMessage .loading-strip {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+    }
+    
+    #errorMessage .loading-progress {
+      height: 100%;
+      width: 100%;
+      background-color: white;
+      transition: width 5s linear;
+    }
+    
+    #errorMessage.fade-out {
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+    
+    /* Desktop adjustments */
+    @media (min-width: 768px) {
+      body {
+        padding-top: 0;
+      }
+      
+      .navbar {
+        position: static;
+      }
+      
+      #errorMessage {
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        min-width: 300px;
+      }
+      
+      .table {
+        font-size: 1rem;
+      }
+      
+      .btn {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+      }
+      
+      .navbar-brand {
+        font-size: 1.25rem;
+      }
+    }
+    
+    /* Small mobile devices */
+    @media (max-width: 400px) {
+      .table th, .table td {
+        padding: 0.5rem 0.3rem;
+        font-size: 0.8rem;
+      }
+      
+      .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+      
+      #book-form .col-md-3, 
+      #book-form .col-md-2 {
+        margin-bottom: 0.5rem;
+      }
+    }
+    
+    /* Action buttons wrap on small screens */
+    @media (max-width: 576px) {
+      .table td:nth-child(6) {
+        white-space: nowrap;
+      }
+      
+      .btn-sm {
+        margin-bottom: 0.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Error Message with Loading Strip -->
+  <div id="errorMessage">
+    <div>Failed to load data. Please try again later.</div>
+    <div class="loading-strip">
+      <div class="loading-progress"></div>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" href="#">Library System</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="books.html">Books</a></li>
+          <li class="nav-item"><a class="nav-link" href="members.html">Members</a></li>
+          <li class="nav-item"><a class="nav-link" href="borrow.html">Borrow Records</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container py-3 py-md-4">
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmationModalLabel">Confirm Action</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="confirmationModalBody">
+            <!-- Message will be inserted here -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirmActionBtn">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Book Form -->
+    <div class="row justify-content-center mb-3 mb-md-4">
+      <div class="col-12 col-md-10">
+        <div class="card p-3 p-md-4">
+          <h3 class="h4 mb-3 text-center text-primary">Add New Book</h3>
+          <form id="book-form">
+            <div class="row g-2 g-md-3">
+              <div class="col-12 col-md-3">
+                <input type="text" id="bookTitle" class="form-control" placeholder="Title" required>
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="bookAuthor" class="form-control" placeholder="Author" required>
+              </div>
+              <div class="col-12 col-md-3">
+                <input type="text" id="bookGenre" class="form-control" placeholder="Genre" required>
+              </div>
+              <div class="col-12 col-md-2">
+                <input type="number" id="bookYear" class="form-control" placeholder="Year" min="1000" max="2099">
+              </div>
+              <div class="col-12 col-md-1 d-grid">
+                <button type="submit" class="btn btn-primary">Add</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Sort Section -->
+    <div class="row justify-content-center mb-3">
+      <div class="col-12 col-md-10">
+        <div class="card p-2 p-md-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-4">
+              <input type="text" id="searchInput" class="form-control" placeholder="Search books...">
+            </div>
+            <div class="col-6 col-md-3">
+              <select id="sortField" class="form-select">
+                <option value="">Sort by...</option>
+                <option value="title">Title</option>
+                <option value="author">Author</option>
+                <option value="genre">Genre</option>
+                <option value="year">Year</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3">
+              <select id="sortOrder" class="form-select">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-2 mt-2 mt-md-0">
+              <button id="resetBtn" class="btn btn-outline-secondary w-100">Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Book Table with Serial Numbers -->
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-10">
+        <div class="card p-2 p-md-4">
+          <h4 class="h5 mb-3 text-center text-primary">Book List</h4>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+              <thead class="table-primary">
+                <tr>
+                  <th>#</th>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>Genre</th>
+                  <th>Year</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bookTableBody">
+                <!-- JS will populate -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const apiUrl = 'http://localhost:5000/api';
+    const bookForm = document.getElementById('book-form');
+    const bookTableBody = document.getElementById('bookTableBody');
+    const searchInput = document.getElementById('searchInput');
+    const sortField = document.getElementById('sortField');
+    const sortOrder = document.getElementById('sortOrder');
+    const resetBtn = document.getElementById('resetBtn');
+    const errorMessage = document.getElementById('errorMessage');
+    const loadingProgress = document.querySelector('.loading-progress');
+    const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+    const confirmationModalBody = document.getElementById('confirmationModalBody');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    
+    let allBooks = [];
+    let displayedBooks = [];
+    let currentAction = null;
+    let currentBookId = null;
+    let isEditing = false;
+
+    // Show error message with loading strip
+    function showError() {
+      // Reset animation
+      loadingProgress.style.transition = 'none';
+      loadingProgress.style.width = '100%';
+      void loadingProgress.offsetWidth; // Trigger reflow
+      
+      // Show message and start animation
+      errorMessage.style.display = 'block';
+      errorMessage.style.opacity = '1';
+      loadingProgress.style.transition = 'width 5s linear';
+      loadingProgress.style.width = '0%';
+      
+      // Hide after animation completes
+      setTimeout(() => {
+        errorMessage.style.opacity = '0';
+        setTimeout(() => {
+          errorMessage.style.display = 'none';
+        }, 500);
+      }, 5000);
+    }
+
+    // Fetch books from backend
+    async function fetchBooks() {
+      try {
+        const response = await fetch(`${apiUrl}/books`);
+        if (!response.ok) throw new Error('Failed to fetch books');
+        
+        allBooks = await response.json();
+        displayedBooks = [...allBooks];
+        renderBooks();
+      } catch (error) {
+        console.error('Error fetching books:', error);
+        showError();
+      }
+    }
+  
+    // Render books in table with serial numbers
+    function renderBooks() {
+      bookTableBody.innerHTML = '';
+      
+      if (displayedBooks.length === 0) {
+        bookTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center">No books found</td>
+          </tr>
+        `;
+        return;
+      }
+  
+      displayedBooks.forEach((book, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${book.title}</td>
+          <td>${book.author}</td>
+          <td>${book.genre}</td>
+          <td>${book.year || '-'}</td>
+          <td class="text-center">
+            <button class="btn btn-sm btn-outline-warning me-1" onclick="showEditConfirmation(${book.id}, '${book.title}', '${book.author}', '${book.genre}', '${book.year || ''}')">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="showDeleteConfirmation(${book.id}, '${book.title}')">Delete</button>
+          </td>
+        `;
+        bookTableBody.appendChild(row);
+      });
+    }
+  
+    // Search functionality
+    searchInput.addEventListener('input', () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      
+      displayedBooks = allBooks.filter(book => 
+        book.title.toLowerCase().includes(searchTerm) ||
+        book.author.toLowerCase().includes(searchTerm) ||
+        book.genre.toLowerCase().includes(searchTerm) ||
+        (book.year && book.year.toString().includes(searchTerm))
+      );
+      
+      renderBooks();
+    });
+  
+    // Sort functionality
+    function sortBooks() {
+      const field = sortField.value;
+      const order = sortOrder.value;
+      
+      if (!field) {
+        displayedBooks = [...allBooks];
+        return;
+      }
+  
+      displayedBooks.sort((a, b) => {
+        let comparison = 0;
+        
+        switch(field) {
+          case 'title':
+          case 'author':
+          case 'genre':
+            comparison = a[field].localeCompare(b[field]);
+            break;
+          case 'year':
+            comparison = (a.year || 0) - (b.year || 0);
+            break;
+        }
+        
+        return order === 'desc' ? -comparison : comparison;
+      });
+    }
+  
+    // Update event listeners
+    sortField.addEventListener('change', () => {
+      sortBooks();
+      renderBooks();
+    });
+  
+    sortOrder.addEventListener('change', () => {
+      sortBooks();
+      renderBooks();
+    });
+  
+    // Reset functionality
+    resetBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      sortField.value = '';
+      sortOrder.value = 'asc';
+      displayedBooks = [...allBooks];
+      renderBooks();
+    });
+  
+    // Add or update book
+    bookForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('bookTitle').value;
+      const author = document.getElementById('bookAuthor').value;
+      const genre = document.getElementById('bookGenre').value;
+      const year = document.getElementById('bookYear').value || null;
+  
+      try {
+        const url = isEditing ? `${apiUrl}/books/${currentBookId}` : `${apiUrl}/books`;
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, author, genre, year })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Failed to save book');
+        }
+        
+        await fetchBooks();
+        bookForm.reset();
+        isEditing = false;
+        currentBookId = null;
+      } catch (error) {
+        console.error('Error:', error);
+        showError();
+      }
+    });
+  
+    // Show delete confirmation dialog
+    window.showDeleteConfirmation = function(id, title) {
+      currentAction = 'delete';
+      currentBookId = id;
+      confirmationModalBody.innerHTML = `
+        <p>Are you sure you want to delete book <strong>${title}</strong>?</p>
+        <p class="text-danger">This action cannot be undone.</p>
+      `;
+      confirmationModal.show();
+    };
+    
+    // Show edit confirmation dialog
+    window.showEditConfirmation = function(id, title, author, genre, year) {
+      currentAction = 'edit';
+      currentBookId = id;
+      confirmationModalBody.innerHTML = `
+        <p>Are you sure you want to edit book <strong>${title}</strong>?</p>
+        <p>This will load its details into the form for editing.</p>
+      `;
+      confirmationModal.show();
+      
+      // After confirmation, load into form
+      confirmActionBtn.addEventListener('click', () => {
+        document.getElementById('bookTitle').value = title;
+        document.getElementById('bookAuthor').value = author;
+        document.getElementById('bookGenre').value = genre;
+        document.getElementById('bookYear').value = year;
+        isEditing = true;
+        
+        // Scroll to form
+        document.getElementById('book-form').scrollIntoView({ 
+          behavior: 'smooth' 
+        });
+      }, { once: true });
+    };
+    
+    // Handle confirmation button click
+    confirmActionBtn.addEventListener('click', async () => {
+      confirmationModal.hide();
+      
+      try {
+        if (currentAction === 'delete') {
+          const response = await fetch(`${apiUrl}/books/${currentBookId}`, { 
+            method: 'DELETE' 
+          });
+          if (!response.ok) throw new Error('Failed to delete book');
+          await fetchBooks();
+        }
+      } catch (error) {
+        console.error('Error performing action:', error);
+        showError();
+      }
+    });
+  
+    // Initialize
+    fetchBooks();
+  </script>
+</body>
+</html>
